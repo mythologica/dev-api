@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.devtools.worker.dao.ApiDao">
+	<sql id="SOURCE_SQL">
+		SELECT 'OK' AS CHECK_VALUE , 1 AS NO
+		UNION ALL
+		SELECT 'NO' AS CHECK_VALUE , 2 AS NO
+		UNION ALL
+		SELECT 'OK' AS CHECK_VALUE , 3 AS NO
+		UNION ALL
+		SELECT 'NO' AS CHECK_VALUE , 4 AS NO
+		UNION ALL
+		SELECT 'OK' AS CHECK_VALUE , 5 AS NO
+		UNION ALL
+		SELECT 'NO' AS CHECK_VALUE , 6 AS NO
+		UNION ALL
+		SELECT 'OK' AS CHECK_VALUE , 7 AS NO
+		UNION ALL
+		SELECT 'NO' AS CHECK_VALUE , 8 AS NO
+	</sql>
+
+	<select id="selectData" resultType="hashMap">
+		SELECT M.*
+		FROM (
+		<include refid="SOURCE_SQL"/>
+		) M
+		WHERE M.no <![CDATA[ < ]]> 5
+	</select>
+</mapper>

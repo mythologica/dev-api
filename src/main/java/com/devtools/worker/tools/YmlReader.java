@@ -8,27 +8,46 @@ import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.*;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
 public class YmlReader {
-    private final static String LOCAL_CONFIG= "custom-local-config";
-    private final static String LOCAL_YML_FILE = "file:/data/workspace/was/config/local.yml";
-
-    private final static String APP_CONFIG= "custom-app-config";
+    private static YmlReader INSTANCE = new YmlReader();
+    private final static String APP_CONFIG = "custom-app-config";
     private final static String APP_YML_FILE = "classpath:/application.yml"; //"classpath:/custom-config.yaml"
+    private final static String LOCAL_CONFIG_NAME_KEY= "local.config.name";
+    private final static String LOCAL_CONFIG_PATH_KEY= "local.config.file";
+    private String localFullFileName = null;
+    private ConfigurableEnvironment appEnv = null;
+    private ConfigurableEnvironment localEnv = null;
 
-    private static ConfigurableEnvironment appEnv = null;
-    private static ConfigurableEnvironment localEnv = null;
+    private YmlReader() {
+        this.init();
+    }
 
-    private static ConfigurableEnvironment getEnv(String config, String fullFileName) {
-        ConfigurableEnvironment env = null;
-        Resource resource = new DefaultResourceLoader().getResource(fullFileName);
-
-        if (!resource.exists()) {
-            throw new IllegalArgumentException("Resource " + fullFileName + " does not exist");
+    private Resource getResource(String fullFileName ) {
+        Resource resource = null;
+        try {
+            resource = new DefaultResourceLoader().getResource(fullFileName);
+        } catch (Exception ex) {
+            // null
         }
+        return resource;
+    }
+
+    private ConfigurableEnvironment getEnv(String config, String fullFileName) {
+        ConfigurableEnvironment env = null;
+
+        Resource resource = getResource(fullFileName);
+
+        if (resource == null || !resource.exists()) {
+            // throw new IllegalArgumentException("Resource " + fullFileName + " does not exist");
+            System.out.println("Resource " + fullFileName + " does not exist");
+            return null;
+        }
+
 
         ConfigurableApplicationContext ctx = null;
         try {
@@ -36,44 +55,66 @@ public class YmlReader {
             ctx = new GenericXmlApplicationContext();
             env = ctx.getEnvironment(); // ctx.getEnvironment();
             env.getPropertySources().addLast(propertySource);
-        }
-        catch (Exception ex) {
-            throw new IllegalStateException(
-                    "Failed to load yaml configuration from " + fullFileName, ex);
+        } catch (Exception ex) {
+            System.out.println(new IllegalStateException("Failed to load yaml configuration from " + fullFileName, ex).getLocalizedMessage());
+            return null;
         } finally {
-            if( ctx != null ) {
+            if (ctx != null) {
                 ctx.close();
             }
         }
         return env;
     }
 
-    public static String getPropertyFromApp(String key) {
-        if( appEnv == null ) {
-            appEnv = getEnv(APP_CONFIG, APP_YML_FILE);
+    private void init() {
+        if (this.appEnv == null) {
+            this.appEnv = getEnv(APP_CONFIG, APP_YML_FILE);
+
+            String configName = this.appEnv.getProperty(LOCAL_CONFIG_NAME_KEY , "");
+            this.localFullFileName = this.appEnv.getProperty(LOCAL_CONFIG_PATH_KEY);
+
+            this.localEnv = getEnv(configName, this.localFullFileName);
         }
-        if( appEnv != null && appEnv.getProperty(key) != null) {
-            return appEnv.getProperty(key);
-        }
-        return "";
     }
 
-    public static boolean isLocal() {
+    public static boolean hasConfig() {
+        if( INSTANCE.appEnv == null ) {
+            INSTANCE.init();
+        }
+        return INSTANCE.appEnv != null && INSTANCE.localEnv != null;
+    }
+
+    public static String getPropertyFromApp(String key , String defaultValue) {
+        if( INSTANCE.appEnv == null ) {
+            INSTANCE.init();
+        }
+        if (INSTANCE.appEnv != null && INSTANCE.appEnv.getProperty(key) != null) {
+            return INSTANCE.appEnv.getProperty(key , defaultValue);
+        }
+        return defaultValue;
+    }
+
+    public static boolean hasLocalConfig() {
+        if( INSTANCE.appEnv == null ) {
+            INSTANCE.init();
+        }
+        boolean isExistFileName = false;
         try {
-            return new FileSystemResource(LOCAL_YML_FILE).exists();
-        }catch(Exception ex) {
-            return false;
+            isExistFileName = INSTANCE.localFullFileName != null && new DefaultResourceLoader().getResource(INSTANCE.localFullFileName).exists();
+        } catch (Exception ex) {
+            //file not exists
         }
+        return isExistFileName;
     }
 
-    public static String getPropertyFromLocal(String key) {
-        if( localEnv == null ) {
-            localEnv = getEnv(LOCAL_CONFIG, LOCAL_YML_FILE);
+    public static String getPropertyFromLocal(String key , String defaultValue) {
+        if( INSTANCE.appEnv == null ) {
+            INSTANCE.init();
         }
-        if( localEnv != null && localEnv.getProperty(key) != null) {
-            return localEnv.getProperty(key);
+        if (INSTANCE.localEnv != null && INSTANCE.localEnv.getProperty(key) != null) {
+            return INSTANCE.localEnv.getProperty(key, defaultValue);
         }
-        return "";
+        return defaultValue;
     }
-
 }
+

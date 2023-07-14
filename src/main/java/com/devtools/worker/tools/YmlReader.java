@@ -4,17 +4,14 @@ import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.*;
 
-import java.io.File;
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.LinkedHashMap;
 
-public class YmlReader {
-    private static YmlReader INSTANCE = new YmlReader();
+public class ConfigReader {
+    private static ConfigReader INSTANCE = new ConfigReader();
     private final static String APP_CONFIG = "custom-app-config";
     private final static String APP_YML_FILE = "classpath:/application.yml"; //"classpath:/custom-config.yaml"
     private final static String LOCAL_CONFIG_NAME_KEY= "local.config.name";
@@ -23,7 +20,7 @@ public class YmlReader {
     private ConfigurableEnvironment appEnv = null;
     private ConfigurableEnvironment localEnv = null;
 
-    private YmlReader() {
+    private ConfigReader() {
         this.init();
     }
 
@@ -55,6 +52,17 @@ public class YmlReader {
             ctx = new GenericXmlApplicationContext();
             env = ctx.getEnvironment(); // ctx.getEnvironment();
             env.getPropertySources().addLast(propertySource);
+
+            // system 정보 
+            Map systemInfo = env.getSystemEnvironment();
+            Iterator it = systemInfo.keySet().iterator();
+
+            while (it.hasNext()) {
+                String key = (String)it.next();
+                String value = systemInfo.get(key).toString();
+                System.out.println("key:"+key+",value:"+value);
+            }
+
         } catch (Exception ex) {
             System.out.println(new IllegalStateException("Failed to load yaml configuration from " + fullFileName, ex).getLocalizedMessage());
             return null;
@@ -117,4 +125,3 @@ public class YmlReader {
         return defaultValue;
     }
 }
-

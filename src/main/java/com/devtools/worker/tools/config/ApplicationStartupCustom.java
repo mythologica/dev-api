@@ -1,7 +1,7 @@
 package com.devtools.worker.tools.config;
 
 
-import com.dodam.builder.util.ConfigReader;
+//import com.dodam.builder.util.ConfigReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationListener;
@@ -20,6 +20,6 @@ public class ApplicationStartupCustom implements ApplicationListener<Application
     public void onApplicationEvent(ApplicationStartedEvent event) {
         System.out.println("onProfile = " + onProfile);
         System.out.println("password = " + authorName);
-        ConfigReader.setOnProfile(onProfile);
+        //ConfigReader.setOnProfile(onProfile);
     }
 }
